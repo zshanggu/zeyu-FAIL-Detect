@@ -4,7 +4,7 @@
 
 ## Prerequisite
 
-Set up the environment by running
+We base our environment on [diffusion_policy](https://github.com/real-stanford/diffusion_policy). Set up the environment by running
 
 ```
 mamba env create -f conda_environment.yaml
@@ -14,9 +14,9 @@ mamba env create -f conda_environment.yaml
 
 ### 1. Policy training
 
-**Tasks**: we support all except the `lift` task in robomimic, which is too simple to fail in most cases.
+**Tasks**: we consider `square`, `transport`, `tool_hang`, and `can` tasks in [robomimic](https://robomimic.github.io/).
 
-**Policy backbone**: either diffusion policy or flow-matching policy.
+**Policy backbone**: Either diffusion policy or flow-matching policy. Both policies have the same network architecture and are trained on the same datasets with same hyperparameters.
 
 **Usage**: see `diffusion_policy/configs_robomimic` for the set of configs.
 
@@ -27,6 +27,7 @@ python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=im
 # This trains a diffusion policy (e.g, on the square task)
 python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=image_square_ph_visual_diffusion_policy_cnn.yaml training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
 
+# For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
 ```
 
 ### 2. Obtain $\{(A_t, O_t)\}$ given a trained policy
@@ -45,6 +46,8 @@ training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${
 python save_data.py --config-dir=diffusion_policy/configs_robomimic \
 --config-name=image_square_ph_visual_diffusion_policy_cnn.yaml \
 training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
+
+# For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
 ```
 
 ### 3. Train scalar scores given $\{(A_t, O_t)\}$
@@ -52,13 +55,14 @@ training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${
 We give the examples of using **logpZO** and **RND**, which are the best performings ones. The other baselines are similar by swicthing to the corresponding folders
 
 ```
-# Can change to other tasks among ['square', 'transport', 'tool_hang', 'can']
-
 cd UQ_baselines/logpZO/ # Or change to /RND/, /CFM/, /NatPN/, /DER/ ...
 # flow policy
 python train.py --policy_type='flow' --type 'square'
 # diffusion policy
 python train.py --policy_type='diffusion' --type 'square'
+cd ../..
+
+# For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
 ```
 
 ### 4. Run evaluation
@@ -66,31 +70,26 @@ python train.py --policy_type='diffusion' --type 'square'
 ```
 cd UQ_test
 # modify = False is ID
-python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=100
-python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=false --num=100
+python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=2000
+python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=false --num=2000
 
 # modify = True is OOD
-python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=true --num=100
-python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=true --num=100
+python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=true --num=2000
+python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=true --num=2000
+cd ..
+
+# For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
 ```
 
 ### 5. CP band + visualization
 
 ```
 cd UQ_test
-python plot_with_CP_band.py --num_train 20 --num_cal 30 --num_te 50 # Generate CP band and make decision
-python barplot.py --num_train 20 --num_cal 30 --num_te 50 # Generate barplots
+# flow
+python plot_with_CP_band.py # Generate CP band and make decision
+python barplot.py # Generate barplots
+
+# diffusion
+python plot_with_CP_band.py --diffusion_policy # Generate CP band and make decision
+python barplot.py --diffusion_policy # Generate barplots
 ```
-
-
-
----
----
-- [TODO] Change back after testing
-    - Data path: `/home/chenxu/Downloads/TRI_chen/sim_eval/data` to be `data`. 
-    - Training epoch: `  num_epochs: 1` to be 800 for `can` and `square` and 300 for `transport` and `tool_hang`.
-    - `trainer_params=dict(max_epochs=10)` be `trainer_params=dict(max_epochs=1000)`
-    - 'policy.num_rep = 2' to be 'policy.num_rep = 256'
-    - 'python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=100' change to be 'python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=2000'
-    - Remove `--num_train 20 --num_cal 30 --num_te 50` below
-    - Change 'EPOCHS = 5' to be 'EPOCHS = 200'

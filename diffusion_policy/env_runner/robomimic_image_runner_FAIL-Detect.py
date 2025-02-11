@@ -413,7 +413,7 @@ class RobomimicImageRunner(BaseImageRunner):
                 baseline_metric = elb.DER_UQ(self.baseline_model, action_dict['global_cond'], self.task_name)
                 metric_baseline_local_slices_DER.append(baseline_metric)
                 ## Second is STAC                
-                policy.num_rep = 2 # Following their Table 2 on push-t
+                policy.num_rep = 256 # Following their Table 2 on push-t
                 #### Aside, get action prediction mean and variance
                 policy.compute_logp = False # No need to compute logp in FP
                 start_t = time.time()

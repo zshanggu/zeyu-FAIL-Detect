@@ -23,7 +23,7 @@ if __name__ == "__main__":
     train_data = torch.utils.data.TensorDataset(X, Y)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=128, shuffle=True)
     ckpt_file = f'{type}_{args.policy_type}.ckpt'
-    EPOCHS = 5
+    EPOCHS = 200
 
     # choice of model/method
     net = RNDPolicy(input_dim, global_cond_dim).to(device)
