@@ -9,13 +9,6 @@ Set up the environment by running
 ```
 mamba env create -f conda_environment.yaml
 ```
-- [TODO] Run everything (DP/FP x 4 tasks) from scratch (with small # of training steps) to verify everything is runnable
-    - For the STAC repetition, change it to be 1 or 2 for speed
-    - Any additional library needed? (see `requirements.txt` for DER and NatPN)
-    
-- [TODO] Change back 
-    - `/home/chenxu/Downloads/TRI_chen/sim_eval/data` to be `data`. 
-    - `  num_epochs: 5` to be 800 for `can` and `square` and 300 for `transport` and `tool_hang`.
 
 ## Usage
 
@@ -42,20 +35,16 @@ Here,
 - $O_t$ = [Embedded visual features, non-visual information (e.g., robot states)]. 
 - $A_t$ = corresponding action *in training data*.
 
-**Note**: the required argument `ckpt_path` is the checkpoint for each task, which can be found in `data/outputs/folder_name/checkpoints`
-
 ```
 # For flow policy (e.g, on the square task)
 python save_data.py --config-dir=diffusion_policy/configs_robomimic \
 --config-name=image_square_ph_visual_flow_policy_cnn.yaml \
-training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}' \
---policy_type=flow --ckpt_path=TO_BE_SPECIFIED
+training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}' 
 
 # For diffusion policy (e.g, on the square task)
 python save_data.py --config-dir=diffusion_policy/configs_robomimic \
 --config-name=image_square_ph_visual_diffusion_policy_cnn.yaml \
-training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}' \
---policy_type=diffusion --ckpt_path=TO_BE_SPECIFIED
+training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
 ```
 
 ### 3. Train scalar scores given $\{(A_t, O_t)\}$
@@ -63,31 +52,45 @@ training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${
 We give the examples of using **logpZO** and **RND**, which are the best performings ones. The other baselines are similar by swicthing to the corresponding folders
 
 ```
-# Can change to other tasks among ['square', 'transport', 'tool_hang', 'can'], or use diffusion policy by setting --policy_type='diffusion'
+# Can change to other tasks among ['square', 'transport', 'tool_hang', 'can']
 
-# For logpZO
-cd UQ_baselines/logpZO/
+cd UQ_baselines/logpZO/ # Or change to /RND/, /CFM/, /NatPN/, /DER/ ...
+# flow policy
 python train.py --policy_type='flow' --type 'square'
-
-# For RND
-cd UQ_baselines/RND/
-python train.py --policy_type='flow' --type 'square'
+# diffusion policy
+python train.py --policy_type='diffusion' --type 'square'
 ```
 
 ### 4. Run evaluation
 
-**ckpt_path** is the same as step 2.
 ```
 cd UQ_test
-python eval_together.py --ckpt_path TO_BE_SPECIFIED \
---policy_type='flow' --task_name='square' --num_inference_step=1 \
---device=0 --modify=false --num=200
+# modify = False is ID
+python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=100
+python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=false --num=100
+
+# modify = True is OOD
+python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=true --num=100
+python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=true --num=100
 ```
 
 ### 5. CP band + visualization
 
 ```
-python plot_with_CP_band.py # Generate CP band and make decision
-python barplot.py # Generate barplots
-
+cd UQ_test
+python plot_with_CP_band.py --num_train 20 --num_cal 30 --num_te 50 # Generate CP band and make decision
+python barplot.py --num_train 20 --num_cal 30 --num_te 50 # Generate barplots
 ```
+
+
+
+---
+---
+- [TODO] Change back after testing
+    - Data path: `/home/chenxu/Downloads/TRI_chen/sim_eval/data` to be `data`. 
+    - Training epoch: `  num_epochs: 1` to be 800 for `can` and `square` and 300 for `transport` and `tool_hang`.
+    - `trainer_params=dict(max_epochs=10)` be `trainer_params=dict(max_epochs=1000)`
+    - 'policy.num_rep = 2' to be 'policy.num_rep = 256'
+    - 'python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=100' change to be 'python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=2000'
+    - Remove `--num_train 20 --num_cal 30 --num_te 50` below
+    - Change 'EPOCHS = 5' to be 'EPOCHS = 200'

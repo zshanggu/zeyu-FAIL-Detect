@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 
 class PCAKMeansNet(nn.Module):
-    def __init__(self, X=None, explained_variance=0.99, input_dim=None, emb_dim=None, n_clusters=64):
+    def __init__(self, X=None, input_dim=None, emb_dim=None, n_clusters=64):
         super(PCAKMeansNet, self).__init__()
         
         if X is not None:
             # Perform PCA
-            self.pca = PCA(n_components=explained_variance, svd_solver='full')
+            self.pca = PCA(n_components=emb_dim, svd_solver='full')
             X_enc = self.pca.fit_transform(X)
             print(f"Embedding dimension: {emb_dim}")
             

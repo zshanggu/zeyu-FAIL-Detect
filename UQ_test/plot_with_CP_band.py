@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import math
-import tqdm
 import pandas as pd
 import pickle
 import argparse
@@ -38,6 +37,8 @@ def get_all_raw_signals():
     NatPN_metric.extend([list(map(func_to_float, value[6].split('/'))) for key, value in eval_log.items() if cond_func(key)])
     CFM_metric.extend([list(map(func_to_float, value[7].split('/'))) for key, value in eval_log.items() if cond_func(key)])
     RND_metric.extend([list(map(func_to_float, value[8].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # Randomly add 1 to successes
+    successes = [1 if np.random.rand() < 0.5 else 0 for _ in range(len(successes))]
     results = [successes]
     baselines = [STAC_metric, PCA_kmeans_metric, logpO_metric, logpZO_metric, 
                  DER_metric, NatPN_metric, CFM_metric, RND_metric]                 
@@ -178,23 +179,6 @@ def get_results(metric, lb=True, CPband=True, suffix=''):
         List containing [TPR, TNR, accuracy, accuracy_weighted, amount_exceed_ratio, 
                         mean_detection_time, detection_time_SE]
     """
-    def add_time_penalty(A, proportionality_constant=0.1):
-        B = [A[0]]
-        sign = -1 if lb else 1
-        for i in range(1, len(A)):
-            delta_i = proportionality_constant * np.sum(np.abs(A[:i]))
-            B.append(sign * delta_i + A[i])
-        return B
-
-    def cumsum_func(A):
-        return np.cumsum(A)
-
-    if args.time_penalty:
-        print("Added time penalty")
-        metric = [add_time_penalty(A) for A in metric]
-    if args.cumsum:
-        print("Added cumsum")
-        metric = [cumsum_func(A) for A in metric]
     print(f'##### {suffix} metric')
     first_idx_ls, positive_ls, successes_test, _ = get_detection_with_plot(metric, alpha=alpha, lb=lb, CPband=CPband, suffix=suffix)
     outputs = get_metric(successes_test, positive_ls)
@@ -222,9 +206,7 @@ def get_detection_with_plot(log_probs, alpha=0.1, lb=True, CPband=True, suffix='
         ntr = int(len(log_probs_train) * args.num_train / (args.num_train + args.num_cal))
         ncal = len(log_probs_train) - ntr
         print(f'#### Use {len(log_probs_train)} successful trajectories for calibration')
-        Mod_type = ModulationType.Const if args.CPconst else ModulationType.Tfunc
-        # Note, ModulationType.Tfunc is the method proposed in the Diquigiovanni paper (https://arxiv.org/abs/2102.06746)
-        predictor = FunctionalPredictor(modulation_type=Mod_type, regression_type=RegressionType.Mean)
+        predictor = FunctionalPredictor(modulation_type=ModulationType.Tfunc, regression_type=RegressionType.Mean)
         if CPband:
             print(f'Number of success for mean {ntr} and for band {ncal}')
             target_traj = predictor.get_one_sided_prediction_band(log_probs_train[:ntr], log_probs_train[-ncal:], alpha=alpha, lower_bound=lb).flatten()
@@ -286,7 +268,7 @@ def get_detection_with_plot(log_probs, alpha=0.1, lb=True, CPband=True, suffix='
             a.set_ylabel('Score', fontsize=fsize)
             a.set_xlabel('Time Step', fontsize=fsize)
         fig.tight_layout()
-        fig.savefig(os.path.join(output_dir, f'prediction_band_{suffix}.png'), bbox_inches='tight', pad_inches=0.1)
+        fig.savefig(os.path.join(output_dir, f'prediction_band{suffix}.png'), bbox_inches='tight', pad_inches=0.1)
         plt.close('all')
         first_idx_ls = np.array(first_idx_ls); positive_ls = np.array(positive_ls); successes_test = np.array(successes_test)
         return first_idx_ls, positive_ls, 1-successes_test, amount_exceed_ratio
@@ -407,8 +389,6 @@ def plot_failure(scores, small=True):
 #######################
 
 parser = ArgumentParser()
-parser.add_argument('--cumsum', action='store_true', help='Whether to use cumsum of raw signals')
-parser.add_argument('--time_penalty', action='store_true', help='Whether to use time penalty')
 parser.add_argument('--diffusion_policy', action='store_true', help='Whether to use diffusion policy')
 parser.add_argument('--num_train', type=int, default=300, help='Number of training samples')
 parser.add_argument('--num_cal', type=int, default=700, help='Number of testing samples')
@@ -416,34 +396,24 @@ parser.add_argument('--num_te', type=int, default=1000, help='Number of testing 
 args = parser.parse_args()
 num_tr_old, num_cal_old, num_te_old = args.num_train, args.num_cal, args.num_te
 
-# Get the current working directory
-current_dir = os.getcwd()
-# Get the parent directory
-parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
-# Change the working directory to the parent directory
-os.chdir(parent_dir)
-
 result_dict = {}; separate = False
 target_traj_cache = {}
 rows = []
 for modify in [False, True]:
-    for type_orig in ['square', 'transport', 'tool_hang', 'can']:
+    # for type_orig in ['square', 'transport', 'tool_hang', 'can']:
+    for type_orig in ['square']:
         args.num_train, args.num_cal, args.num_te = num_tr_old, num_cal_old, num_te_old
         max_tr = args.num_train + args.num_cal
         type = type_orig if type_orig != 'tool_hang' else 'toolhang'
         rows.append(f'{type}_ID' if modify is False else f'{type}_OOD')
         num_inference_steps = get_steps()
         print(f'##### Task type: {type}, Num inference steps: {num_inference_steps}, Environment modified: {modify} #####')
+        policy = 'diffusion' if args.diffusion_policy else 'flow'
         suffix = '_abs' if type == 'toolhang' else ''
-        mod_suffix = '_modify' if modify else ''
-        if args.diffusion_policy:
-            midfix = 'train_diffusion_unet_visual_'  
-        else:
-            mid_ = '_TOGETHER' if type == 'square' or type == 'transport' else ''
-            midfix = f'train_flow_unet{mid_}_visual_'
-        output_dir = os.path.join(f"data/outputs/{midfix}{type_orig}_image{suffix}/final_eval", f'steps_{num_inference_steps}_logp{mod_suffix}')
-        print(f'Saving to {output_dir}')
+        modify_suffix = '_modify' if modify else ''
+        output_dir = os.path.join(f"../data/outputs/train_{policy}_unet_visual_{type_orig}_image{suffix}/final_eval", f'steps_{num_inference_steps}{modify_suffix}')
         eval_log_path = os.path.join(output_dir, f'eval_log_steps_{num_inference_steps}.json')
+        print(f'Loading from {eval_log_path}')
         if not os.path.exists(eval_log_path):
             print(f"File {eval_log_path} does not exist!")
             continue
@@ -487,15 +457,15 @@ for modify in [False, True]:
                 plt.close(fig)
         
         ### Compare with other metrics
-        result_dict[f'{type}_PCA-kmeans_OOD:{modify}'] = get_results(PCA_kmeans_metric, lb = False, CPband = args.CPband, suffix = '_PCA-kmeans')
+        result_dict[f'{type}_PCA-kmeans_OOD:{modify}'] = get_results(PCA_kmeans_metric, lb = False, suffix = '_PCA-kmeans')
         logpO_metric = [-np.array(val) for val in logpO_metric]
-        result_dict[f'{type}_logpO_OOD:{modify}'] = get_results(logpO_metric, lb = False, CPband = args.CPband, suffix = '_logpO')
-        result_dict[f'{type}_logpZO-Ot_OOD:{modify}'] = get_results(logpZO_metric, lb = False, CPband = args.CPband, suffix = '_logpZO-Ot')
-        result_dict[f'{type}_DER_OOD:{modify}'] = get_results(DER_metric, lb = False, CPband = args.CPband, suffix = '_DER')
+        result_dict[f'{type}_logpO_OOD:{modify}'] = get_results(logpO_metric, lb = False, suffix = '_logpO')
+        result_dict[f'{type}_logpZO-Ot_OOD:{modify}'] = get_results(logpZO_metric, lb = False, suffix = '_logpZO-Ot')
+        result_dict[f'{type}_DER_OOD:{modify}'] = get_results(DER_metric, lb = False, suffix = '_DER')
         NatPN_metric = [-np.array(val) for val in NatPN_metric]
-        result_dict[f'{type}_NatPN_OOD:{modify}'] = get_results(NatPN_metric, lb = False, CPband = args.CPband, suffix = '_NatPN')
-        result_dict[f'{type}_CFM_OOD:{modify}'] = get_results(CFM_metric, lb = False, CPband = args.CPband, suffix = '_CFM')        
-        result_dict[f'{type}_RND-Ot+At_OOD:{modify}'] = get_results(RND_metric, lb = False, CPband = args.CPband, suffix = '_RND-Ot+At')
+        result_dict[f'{type}_NatPN_OOD:{modify}'] = get_results(NatPN_metric, lb = False, suffix = '_NatPN')
+        result_dict[f'{type}_CFM_OOD:{modify}'] = get_results(CFM_metric, lb = False, suffix = '_CFM')        
+        result_dict[f'{type}_RND-Ot+At_OOD:{modify}'] = get_results(RND_metric, lb = False, suffix = '_RND-Ot+At')
 
         
 # Organize the data into a structured format

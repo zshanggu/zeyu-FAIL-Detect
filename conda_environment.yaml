@@ -66,3 +66,4 @@ dependencies:
     - lightkit
     - scikit-learn
     - gurobipy
+    - huggingface_hub==0.25.0

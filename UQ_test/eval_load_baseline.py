@@ -4,10 +4,6 @@ import sys
 import numpy as np
 import math
 sys.path.append('..')
-# Get current GPU device in use 
-current_device = torch.cuda.current_device()
-device = torch.device(f'cuda:{current_device}')
-
 master_dir = '../UQ_baselines'
 path_logpZO = os.path.join(master_dir, 'logpZO')
 path_RND = os.path.join(master_dir, 'RND')
@@ -15,6 +11,8 @@ path_DER = os.path.join(master_dir, 'DER')
 path_CFM = os.path.join(master_dir, 'CFM')
 path_NatPN = os.path.join(master_dir, 'NatPN')
 path_PCA_kmeans = os.path.join(master_dir, 'PCA_kmeans')
+for p in [path_logpZO, path_RND, path_DER, path_CFM, path_NatPN, path_PCA_kmeans]:
+    sys.path.append(p)
 
 ## Load models
 def get_baseline_model(baseline_name, task_name, policy_type='flow'):
@@ -35,11 +33,11 @@ def get_baseline_model(baseline_name, task_name, policy_type='flow'):
         net, path_now = RNDPolicy(input_dim, global_cond_dim), path_RND 
         net = net
     if baseline_name == 'CFM' or baseline_name == 'logpZO':
-        import net as Net
+        import net_CFM as Net
         input_dim = 10
         if task_name == 'transport':
             input_dim = 20
-        net = Net.get_unet2(input_dim)
+        net = Net.get_unet(input_dim)
         if baseline_name == 'CFM':
             path_now = path_CFM
         else:
@@ -95,7 +93,7 @@ def RND_UQ(baseline_model, action, observation):
     baseline_model.eval()
     with torch.no_grad():
         # Sum the differences over the temporal aspect
-        return baseline_model(action.to(device), observation.to(device)).sum(dim=1).cpu()
+        return baseline_model(action, observation).sum(dim=1).cpu()
     
 # DER
 def DER_UQ(baseline_model, global_cond, task_name):
@@ -175,3 +173,45 @@ def logpO_UQ(baseline_model, observation, task_name = 'square'):
     log_p_O = log_p_z + approx_tr_dzdx
     return log_p_O
 
+def median_trick_bandwidth(x, y):
+    # Combine x and y
+    combined = torch.cat([x, y], dim=0)
+    # Compute pairwise distances
+    pairwise_dists = torch.cdist(combined, combined, p=2)
+    # Get the upper triangle of the distance matrix, without the diagonal
+    upper_tri_dists = pairwise_dists.triu(diagonal=1)
+    # Flatten and remove zero distances (diagonal elements)
+    upper_tri_dists = upper_tri_dists[upper_tri_dists > 0]
+    # Compute the median of these distances
+    bandwidth = upper_tri_dists.median()
+    return 2*bandwidth.item()**2
+
+def STAC_UQ(prev_actions, curr_actions):
+    x = prev_actions; y = curr_actions
+    if x is None:
+        return torch.zeros(curr_actions.shape[0]).to(curr_actions.device)
+    else:
+        # Compare the MMD between the previous and current actions over batches (2nd dimension)
+        N, B, a, b = x.shape
+        # beta_1 = 1 / b # Following their Table 2 in appendix as 1/|A|
+        # Flatten the last two dimensions for RBF kernel computation
+        x_flat = x.reshape(N, B, a*b)
+        y_flat = y.reshape(N, B, a*b) 
+        # Compute pairwise RBF kernel
+        def rbf_kernel(a, b, beta):
+            pairwise_dists = torch.cdist(a, b, p=2) ** 2
+            return torch.exp(-pairwise_dists / beta)       
+        mmd_values = torch.zeros(N, device=x.device)
+        for i in range(N):
+            x_i = x_flat[i]
+            y_i = y_flat[i]
+            # use median heuristic for bandwidth
+            beta_1 = median_trick_bandwidth(x_i, y_i)
+            k_xx = rbf_kernel(x_i, x_i, beta_1).mean()
+            k_yy = rbf_kernel(y_i, y_i, beta_1).mean()
+            k_xy = rbf_kernel(x_i, y_i, beta_1).mean()
+            mmd_values[i] = k_xx + k_yy - 2 * k_xy     
+        return mmd_values
+
+def PCA_kmeans_UQ(baseline_model, observation):
+    return baseline_model(observation)

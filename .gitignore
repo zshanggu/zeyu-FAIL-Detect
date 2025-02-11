@@ -1,0 +1,16 @@
+*.mp4
+*.ckpt
+*.out
+*.log
+*.json
+*.yaml
+*.txt
+*.csv
+*.pkl
+*.pt
+*.patch
+*.wandb
+*.pyc
+__pycache__/
+*.cpython
+*.png

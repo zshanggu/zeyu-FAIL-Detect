@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	train_data = torch.utils.data.TensorDataset(X, Y)
 	train_loader = torch.utils.data.DataLoader(train_data, batch_size=128, shuffle=True)
 	ckpt_file = f'{type}_{args.policy_type}.ckpt'
-	EPOCHS = 200
+	EPOCHS = 5
 	optimizer_params = {
 		"lr": 1e-04,
 		"betas": (0.9, 0.999),

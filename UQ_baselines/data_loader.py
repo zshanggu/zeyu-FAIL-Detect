@@ -1,5 +1,4 @@
 import torch
-
 def adjust_xshape(x, in_dim):
     total_dim = x.shape[1]
     # Calculate the padding needed to make total_dim a multiple of in_dim
@@ -16,11 +15,11 @@ def adjust_xshape(x, in_dim):
     return x.reshape(x.shape[0], -1, in_dim)
 
 def get_data(type='square', adjust_shape = True, diffusion = False):
-    suffix = '_diffusion' if diffusion else ''
+    suffix = '_diffusion' if diffusion else '_flow'
     filename = f'{type}_data{suffix}.pt'
-    data = torch.load(f'outputs/{filename}')
+    data = torch.load(f'../../data/outputs/{filename}')
     X, Y = data['X'], data['Y']
-    in_dim_dict = {'square': 10, 'transport': 10, 'tool_hang': 20, 'can': 10, 'lift': 10}
+    in_dim_dict = {'square': 10, 'transport': 20, 'tool_hang': 20, 'can': 10}
     in_dim = in_dim_dict[type]
     if adjust_shape:
         X = adjust_xshape(X, in_dim)

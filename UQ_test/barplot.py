@@ -44,7 +44,7 @@ if __name__ == '__main__':
             continue
         methods = ['STAC', 'PCA-kmeans', 'logpO', 'logpZO-Ot', 'DER', 'NatPN', 'CFM', 'RND-Ot+At']
         methods_name = ['STAC', 'PCA-kmeans', 'logpO', 'logpZO', 'DER', 'NatPN', 'CFM', 'RND']
-        file = os.path.join(master_dir, 'data', f'metrics_failure_detection_tr{num_train}_cal{num_cal}_te{num_te}_DP{args.diffusion_policy}.pkl')
+        file = os.path.join('logging', f'metrics_failure_detection_tr{num_train}_cal{num_cal}_te{num_te}_DP{args.diffusion_policy}.pkl')
         with open(file, 'rb') as f:
             result = pickle.load(f)
         result = result.fillna(0)
