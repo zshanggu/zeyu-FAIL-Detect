@@ -400,8 +400,7 @@ result_dict = {}; separate = False
 target_traj_cache = {}
 rows = []
 for modify in [False, True]:
-    # for type_orig in ['square', 'transport', 'tool_hang', 'can']:
-    for type_orig in ['square']:
+    for type_orig in ['square', 'transport', 'tool_hang', 'can']:
         args.num_train, args.num_cal, args.num_te = num_tr_old, num_cal_old, num_te_old
         max_tr = args.num_train + args.num_cal
         type = type_orig if type_orig != 'tool_hang' else 'toolhang'
