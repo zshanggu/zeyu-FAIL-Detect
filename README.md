@@ -1,6 +1,7 @@
 ## FAIL-Detect: Failure Analysis in Imitation Learning – Detecting failures without failure data
 
 - Please direct implementation questions to Chen Xu (chen.xu@tri.global).
+- The paper is accepted by Robotics: Science and Systems (RSS) 2025 [[OpenReview](https://openreview.net/forum?id=6EzR8J2fkx)]
 
 ## Prerequisite
 
