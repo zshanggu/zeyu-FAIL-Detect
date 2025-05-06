@@ -5,7 +5,7 @@
 </p>
 
 - Project website: https://cxu-tri.github.io/FAIL-Detect-Website/.
-- The paper titled "[Can We Detect Failures Without Failure Data? Uncertainty-Aware Runtime Failure Detection for Imitation Learning Policies](https://arxiv.org/abs/2503.08558)" is accepted by Robotics: Science and Systems (RSS) 2025.
+- The paper titled "[Can We Detect Failures Without Failure Data? Uncertainty-Aware Runtime Failure Detection for Imitation Learning Policies](https://arxiv.org/abs/2503.08558)" is accepted at Robotics: Science and Systems (RSS) 2025.
 - Please direct implementation questions to Chen Xu (chen.xu@tri.global).
 
 ## Prerequisite
@@ -58,7 +58,7 @@ training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${
 
 ### 3. Train scalar scores given $\{(A_t, O_t)\}$
 
-We give the examples of using **logpZO** and **RND**, which are the best performings ones. The other baselines are similar by swicthing to the corresponding folders
+We give the examples of using **logpZO** and **RND**, which are the best performings ones. The other baselines are similar by switching to the corresponding folders
 
 ```
 cd UQ_baselines/logpZO/ # Or change to /RND/, /CFM/, /NatPN/, /DER/ ...
