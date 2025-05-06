@@ -4,8 +4,9 @@
   <img src="method.png" alt="FAIL-Detect Overview" style="width:100%;"/>
 </p>
 
-- Please direct implementation questions to Chen Xu (chen.xu@tri.global).
+- Project website: https://cxu-tri.github.io/FAIL-Detect-Website/.
 - The paper titled "[Can We Detect Failures Without Failure Data? Uncertainty-Aware Runtime Failure Detection for Imitation Learning Policies](https://arxiv.org/abs/2503.08558)" is accepted by Robotics: Science and Systems (RSS) 2025.
+- Please direct implementation questions to Chen Xu (chen.xu@tri.global).
 
 ## Prerequisite
 
