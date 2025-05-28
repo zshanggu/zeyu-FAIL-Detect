@@ -24,6 +24,7 @@ def get_all_raw_signals():
     cond_func = lambda key: "test/sim_max_reward" in key and 'nv_ob' not in key and 'action' not in key and 'v_ob' not in key
     # Extract data from log
     successes.extend([value[0] for key, value in eval_log.items() if cond_func(key)])
+    results = [successes]
     func_to_float = lambda x: float(x.rstrip('.'))
     #### Baselines
     DER_metric = []; STAC_metric = []
@@ -37,9 +38,6 @@ def get_all_raw_signals():
     NatPN_metric.extend([list(map(func_to_float, value[6].split('/'))) for key, value in eval_log.items() if cond_func(key)])
     CFM_metric.extend([list(map(func_to_float, value[7].split('/'))) for key, value in eval_log.items() if cond_func(key)])
     RND_metric.extend([list(map(func_to_float, value[8].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    # Randomly add 1 to successes
-    successes = [1 if np.random.rand() < 0.5 else 0 for _ in range(len(successes))]
-    results = [successes]
     baselines = [STAC_metric, PCA_kmeans_metric, logpO_metric, logpZO_metric, 
                  DER_metric, NatPN_metric, CFM_metric, RND_metric]                 
     return results + baselines
