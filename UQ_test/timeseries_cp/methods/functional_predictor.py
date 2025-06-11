@@ -112,7 +112,7 @@ class FunctionalPredictor(AbstractPredictor):
             training_data, prediction_trajectory, alpha
         )
 
-        if lower_bound:
+        if not lower_bound:
             calibration_scores = [
                 np.max(
                     (calibration_trajectory - prediction_trajectory)
