@@ -234,7 +234,7 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
             e_dzdx = (model_output_perturb - model_output) / sigma
             e_dzdx_e = e_dzdx * self.global_eps
             approx_tr_dzdx = e_dzdx_e.reshape(trajectory.shape[0], -1).sum(dim=1)
-            trace = trace +approx_tr_dzdx
+            trace = trace + approx_tr_dzdx
 
             # 3. compute previous image: x_t -> x_t-1
             trajectory = trajectory + sign * model_output/self.num_inference_steps
