@@ -410,38 +410,38 @@ class RobomimicImageRunner(BaseImageRunner):
                 import sys
                 sys.path.append('../../UQ_baselines/')
                 import eval_load_baseline as elb
-                baseline_metric = elb.DER_UQ(self.baseline_model, action_dict['global_cond'], self.task_name)
-                metric_baseline_local_slices_DER.append(baseline_metric)
+                # baseline_metric = elb.DER_UQ(self.baseline_model, action_dict['global_cond'], self.task_name)
+                # metric_baseline_local_slices_DER.append(baseline_metric)
                 ## Second is STAC                
-                policy.num_rep = 256 # Following their Table 2 on push-t
-                #### Aside, get action prediction mean and variance
-                policy.compute_logp = False # No need to compute logp in FP
-                start_t = time.time()
-                with torch.no_grad():
-                    # policy.store_var_AO = True if self.num_rep == 0 else False
-                    action_dict_STAC = policy.predict_action(obs_dict)
-                    orig_shape = action_dict_STAC['action_pred'].shape
-                    STAC_curr_actions = action_dict_STAC['action_pred'].reshape(this_n_active_envs, policy.num_rep, *orig_shape[1:])
-                    assert self.n_obs_steps == 2
-                    assert self.n_action_steps == 8
-                    if STAC_prev_actions is not None:
-                        baseline_metric = elb.STAC_UQ(STAC_prev_actions[:, :, 9:16, :], STAC_curr_actions[:, :, 1:8, :])
-                    else:
-                        # Just placeholder
-                        baseline_metric = elb.STAC_UQ(STAC_prev_actions, STAC_curr_actions[:, :, 1:8, :])
-                    STAC_prev_actions = STAC_curr_actions # For next iteration
-                metric_baseline_local_slices_STAC.append(baseline_metric)
-                print('Time taken for STAC:', time.time()-start_t)
-                policy.num_rep = 1 # Restore to 1 for my FP
-                policy.compute_logp = True # Reset to True for my FP
+                # policy.num_rep = 256 # Following their Table 2 on push-t
+                # #### Aside, get action prediction mean and variance
+                # policy.compute_logp = False # No need to compute logp in FP
+                # start_t = time.time()
+                # with torch.no_grad():
+                #     # policy.store_var_AO = True if self.num_rep == 0 else False
+                #     action_dict_STAC = policy.predict_action(obs_dict)
+                #     orig_shape = action_dict_STAC['action_pred'].shape
+                #     STAC_curr_actions = action_dict_STAC['action_pred'].reshape(this_n_active_envs, policy.num_rep, *orig_shape[1:])
+                #     assert self.n_obs_steps == 2
+                #     assert self.n_action_steps == 8
+                #     if STAC_prev_actions is not None:
+                #         baseline_metric = elb.STAC_UQ(STAC_prev_actions[:, :, 9:16, :], STAC_curr_actions[:, :, 1:8, :])
+                #     else:
+                #         # Just placeholder
+                #         baseline_metric = elb.STAC_UQ(STAC_prev_actions, STAC_curr_actions[:, :, 1:8, :])
+                #     STAC_prev_actions = STAC_curr_actions # For next iteration
+                # metric_baseline_local_slices_STAC.append(baseline_metric)
+                # print('Time taken for STAC:', time.time()-start_t)
+                # policy.num_rep = 1 # Restore to 1 for my FP
+                # policy.compute_logp = True # Reset to True for my FP
                 ## RND
-                start_t = time.time()
-                baseline_metric = elb.RND_UQ(self.baseline_model_RND, action_dict['action_pred'], action_dict['global_cond'])
-                metric_baseline_local_slices_RND.append(baseline_metric)
-                print(f'Time taken for RND: {time.time()-start_t}')
+                # start_t = time.time()
+                # baseline_metric = elb.RND_UQ(self.baseline_model_RND, action_dict['action_pred'], action_dict['global_cond'])
+                # metric_baseline_local_slices_RND.append(baseline_metric)
+                # print(f'Time taken for RND: {time.time()-start_t}')
                 ## This is Ov tmp
-                baseline_metric = elb.CFM_UQ(self.baseline_model_CFM, action_dict['global_cond'], task_name = self.task_name)
-                metric_baseline_local_slices_CFM.append(baseline_metric)
+                # baseline_metric = elb.CFM_UQ(self.baseline_model_CFM, action_dict['global_cond'], task_name = self.task_name)
+                # metric_baseline_local_slices_CFM.append(baseline_metric)
                 baseline_metric = elb.logpZO_UQ(self.baseline_model_logpZO, 
                                                      action_dict['global_cond'], 
                                                      task_name = self.task_name)
@@ -451,11 +451,11 @@ class RobomimicImageRunner(BaseImageRunner):
                                                      task_name = self.task_name)
                 log_p_marginal_local_slices.append(baseline_metric)
                 ## This is NatPN
-                baseline_metric = elb.NatPN_UQ(self.baseline_model_natpn, action_dict['global_cond'])
-                metric_baseline_local_slices_NatPN.append(baseline_metric)
+                # baseline_metric = elb.NatPN_UQ(self.baseline_model_natpn, action_dict['global_cond'])
+                # metric_baseline_local_slices_NatPN.append(baseline_metric)
                 ## This is PCA + K-means
-                baseline_metric = elb.PCA_kmeans_UQ(self.baseline_model_PCA_kmeans, action_dict['global_cond'])
-                metric_baseline_local_slices_PCA_kmeans.append(baseline_metric)
+                # baseline_metric = elb.PCA_kmeans_UQ(self.baseline_model_PCA_kmeans, action_dict['global_cond'])
+                # metric_baseline_local_slices_PCA_kmeans.append(baseline_metric)
                 np_action_dict = dict_apply(action_dict,
                     lambda x: x.detach().to('cpu').numpy())
 
@@ -488,18 +488,18 @@ class RobomimicImageRunner(BaseImageRunner):
             all_logpZO[this_global_slice] = logpZO_local_slices
             log_p_marginal_local_slices = torch.stack(log_p_marginal_local_slices, dim=1) # (n_envs, max_steps // T_p)
             all_logpO[this_global_slice] = log_p_marginal_local_slices
-            metric_baseline_local_slices_DER = torch.stack(metric_baseline_local_slices_DER, dim=1) # (n_envs, max_steps // T_p)
-            all_metric_baseline_DER[this_global_slice] = metric_baseline_local_slices_DER
-            metric_baseline_local_slices_STAC = torch.stack(metric_baseline_local_slices_STAC, dim=1) # (n_envs, max_steps // T_p)
-            all_metric_baseline_STAC[this_global_slice] = metric_baseline_local_slices_STAC
-            metric_baseline_local_slices_RND = torch.stack(metric_baseline_local_slices_RND, dim=1) # (n_envs, max_steps // T_p)
-            all_metric_baseline_RND[this_global_slice] = metric_baseline_local_slices_RND
-            metric_baseline_local_slices_CFM = torch.stack(metric_baseline_local_slices_CFM, dim=1) # (n_envs, max_steps // T_p)
-            all_metric_baseline_CFM[this_global_slice] = metric_baseline_local_slices_CFM
-            metric_baseline_local_slices_NatPN = torch.stack(metric_baseline_local_slices_NatPN, dim=1) # (n_envs, max_steps // T_p)
-            all_metric_baseline_NatPN[this_global_slice] = metric_baseline_local_slices_NatPN
-            metric_baseline_local_slices_PCA_kmeans = torch.stack(metric_baseline_local_slices_PCA_kmeans, dim=1) # (n_envs, max_steps // T_p)
-            all_metric_baseline_PCA_kmeans[this_global_slice] = metric_baseline_local_slices_PCA_kmeans
+            # metric_baseline_local_slices_DER = torch.stack(metric_baseline_local_slices_DER, dim=1) # (n_envs, max_steps // T_p)
+            # all_metric_baseline_DER[this_global_slice] = metric_baseline_local_slices_DER
+            # metric_baseline_local_slices_STAC = torch.stack(metric_baseline_local_slices_STAC, dim=1) # (n_envs, max_steps // T_p)
+            # all_metric_baseline_STAC[this_global_slice] = metric_baseline_local_slices_STAC
+            # metric_baseline_local_slices_RND = torch.stack(metric_baseline_local_slices_RND, dim=1) # (n_envs, max_steps // T_p)
+            # all_metric_baseline_RND[this_global_slice] = metric_baseline_local_slices_RND
+            # metric_baseline_local_slices_CFM = torch.stack(metric_baseline_local_slices_CFM, dim=1) # (n_envs, max_steps // T_p)
+            # all_metric_baseline_CFM[this_global_slice] = metric_baseline_local_slices_CFM
+            # metric_baseline_local_slices_NatPN = torch.stack(metric_baseline_local_slices_NatPN, dim=1) # (n_envs, max_steps // T_p)
+            # all_metric_baseline_NatPN[this_global_slice] = metric_baseline_local_slices_NatPN
+            # metric_baseline_local_slices_PCA_kmeans = torch.stack(metric_baseline_local_slices_PCA_kmeans, dim=1) # (n_envs, max_steps // T_p)
+            # all_metric_baseline_PCA_kmeans[this_global_slice] = metric_baseline_local_slices_PCA_kmeans
             if modify and modify_again == False:
                 env.call_each('modify_environment', args_list=[(-delta, render_obs_key)] * len(env.env_fns))
         # clear out video buffer
@@ -518,14 +518,14 @@ class RobomimicImageRunner(BaseImageRunner):
             # max reward, log_p_cond, log_p_marginal, reward
             log_data[prefix+f'sim_max_reward_{seed}'] = [max_reward, 
                                                          # Baseline
-                                                         '/'.join(map(str, helper(all_metric_baseline_STAC, i))),
-                                                         '/'.join(map(str, helper(all_metric_baseline_PCA_kmeans, i))),
+                                                        #  '/'.join(map(str, helper(all_metric_baseline_STAC, i))),
+                                                        #  '/'.join(map(str, helper(all_metric_baseline_PCA_kmeans, i))),
                                                          '/'.join(map(str, helper(all_logpO, i))),
                                                          '/'.join(map(str, helper(all_logpZO, i))),
-                                                         '/'.join(map(str, helper(all_metric_baseline_DER, i))),
-                                                         '/'.join(map(str, helper(all_metric_baseline_NatPN, i))),
-                                                         '/'.join(map(str, helper(all_metric_baseline_CFM, i))),
-                                                         '/'.join(map(str, helper(all_metric_baseline_RND, i))),                                                         
+                                                        #  '/'.join(map(str, helper(all_metric_baseline_DER, i))),
+                                                        #  '/'.join(map(str, helper(all_metric_baseline_NatPN, i))),
+                                                        #  '/'.join(map(str, helper(all_metric_baseline_CFM, i))),
+                                                        #  '/'.join(map(str, helper(all_metric_baseline_RND, i))),                                                         
                                                          ]
         # log aggregate metrics
         for prefix, value in max_rewards.items():

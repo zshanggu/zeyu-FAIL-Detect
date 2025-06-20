@@ -93,24 +93,24 @@ def main(policy_type, task_name, device, modify, num):
     ## Get baseline comparison
     import eval_load_baseline as elb
     # Get DER
-    baseline_model = elb.get_baseline_model('DER', task_name, policy_type=policy_type).to(device)
-    env_runner.baseline_model = baseline_model; env_runner.task_name = task_name; print('DER loaded')
+    # baseline_model = elb.get_baseline_model('DER', task_name, policy_type=policy_type).to(device)
+    # env_runner.baseline_model = baseline_model; env_runner.task_name = task_name; print('DER loaded')
     # Get RND
-    baseline_model_RND = elb.get_baseline_model('RND', task_name, policy_type=policy_type).to(device)
-    env_runner.baseline_model_RND = baseline_model_RND; print('RND loaded')
+    # baseline_model_RND = elb.get_baseline_model('RND', task_name, policy_type=policy_type).to(device)
+    # env_runner.baseline_model_RND = baseline_model_RND; env_runner.task_name = task_name; print('RND loaded')
     ## Get CFM
-    baseline_model_CFM = elb.get_baseline_model('CFM', task_name, policy_type=policy_type).to(device)
-    env_runner.baseline_model_CFM = baseline_model_CFM; print('CFM loaded')
+    # baseline_model_CFM = elb.get_baseline_model('CFM', task_name, policy_type=policy_type).to(device)
+    # env_runner.baseline_model_CFM = baseline_model_CFM; env_runner.task_name = task_name; print('CFM loaded')
     ## Get logpZO
     baseline_model_logpZO = elb.get_baseline_model('logpZO', task_name, policy_type=policy_type).to(device)
-    env_runner.baseline_model_logpZO = baseline_model_logpZO; print('logpZO loaded')
+    env_runner.baseline_model_logpZO = baseline_model_logpZO; env_runner.task_name = task_name; print('logpZO loaded')
     env_runner.baseline_model_logpZO.global_eps = None
     # Get NatPN on (O_t, K-means label)
-    baseline_model_natpn = elb.get_baseline_model('NatPN', task_name, policy_type=policy_type).to(device)
-    env_runner.baseline_model_natpn = baseline_model_natpn; print('NatPN loaded')
+    # baseline_model_natpn = elb.get_baseline_model('NatPN', task_name, policy_type=policy_type).to(device)
+    # env_runner.baseline_model_natpn = baseline_model_natpn; env_runner.task_name = task_name; print('NatPN loaded')
     # PCA + K-means as SOTA
-    baseline_model_PCA_kmeans = elb.get_baseline_model('PCA_kmeans', task_name, policy_type=policy_type).to(device)
-    env_runner.baseline_model_PCA_kmeans = baseline_model_PCA_kmeans; print('PCA_kmeans loaded')
+    # baseline_model_PCA_kmeans = elb.get_baseline_model('PCA_kmeans', task_name, policy_type=policy_type).to(device)
+    # env_runner.baseline_model_PCA_kmeans = baseline_model_PCA_kmeans; env_runner.task_name = task_name; print('PCA_kmeans loaded')
     #####
     env_runner.modify_t = 50 if 'can' not in ckpt_path else 15
     with torch.no_grad():

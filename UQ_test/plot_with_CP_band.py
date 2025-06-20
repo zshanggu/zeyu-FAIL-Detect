@@ -27,20 +27,23 @@ def get_all_raw_signals():
     results = [successes]
     func_to_float = lambda x: float(x.rstrip('.'))
     #### Baselines
-    DER_metric = []; STAC_metric = []
-    RND_metric = []; CFM_metric = []; NatPN_metric = []; PCA_kmeans_metric = []
-    logpO_metric = []; logpZO_metric = []
-    STAC_metric.extend([list(map(func_to_float, value[1].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    PCA_kmeans_metric.extend([list(map(func_to_float, value[2].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    logpO_metric.extend([list(map(func_to_float, value[3].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    logpZO_metric.extend([list(map(func_to_float, value[4].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    DER_metric.extend([list(map(func_to_float, value[5].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    NatPN_metric.extend([list(map(func_to_float, value[6].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    CFM_metric.extend([list(map(func_to_float, value[7].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    RND_metric.extend([list(map(func_to_float, value[8].split('/'))) for key, value in eval_log.items() if cond_func(key)])
-    baselines = [STAC_metric, PCA_kmeans_metric, logpO_metric, logpZO_metric, 
-                 DER_metric, NatPN_metric, CFM_metric, RND_metric]                 
-    return results + baselines
+    # DER_metric = []; STAC_metric = []
+    # RND_metric = []; CFM_metric = []; NatPN_metric = []; PCA_kmeans_metric = []
+    # logpO_metric = []
+    logpZO_metric = []
+    # STAC_metric.extend([list(map(func_to_float, value[1].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # PCA_kmeans_metric.extend([list(map(func_to_float, value[2].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # logpO_metric.extend([list(map(func_to_float, value[3].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # logpZO_metric.extend([list(map(func_to_float, value[4].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    logpZO_metric.extend([list(map(func_to_float, value[2].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # DER_metric.extend([list(map(func_to_float, value[5].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # NatPN_metric.extend([list(map(func_to_float, value[6].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # CFM_metric.extend([list(map(func_to_float, value[7].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # RND_metric.extend([list(map(func_to_float, value[8].split('/'))) for key, value in eval_log.items() if cond_func(key)])
+    # baselines = [STAC_metric, PCA_kmeans_metric, logpO_metric, logpZO_metric, 
+    #              DER_metric, NatPN_metric, CFM_metric, RND_metric]                 
+    # return results + baselines
+    return results + [logpZO_metric]  # Only return successes and logpZO
 
 #######################
 # Plotting Utilities
@@ -417,58 +420,60 @@ for modify in [False, True]:
         everything = get_all_raw_signals()
         cutoff = 7; fsize = 30
         successes = everything[0]
-        STAC_metric, PCA_kmeans_metric, logpO_metric, logpZO_metric, DER_metric, NatPN_metric, CFM_metric, RND_metric = everything[1:]
+        # STAC_metric, PCA_kmeans_metric, logpO_metric, logpZO_metric, DER_metric, NatPN_metric, CFM_metric, RND_metric = everything[1:]
         print(f"Entire Success: {sum(successes)}, Failure: {len(successes) - sum(successes)}, Percentage: {sum(successes)/len(successes)}")
         print(f"Only on test: Success: {sum(successes[max_tr:])}, Failure: {len(successes[max_tr:]) - sum(successes[max_tr:])}, Percentage: {sum(successes[max_tr:])/len(successes[max_tr:])}")
-        
+        logpZO_metric = everything[1]
+
         ################## Plot the conformal prediction bands
         alpha = get_alpha()
         factor = 8   
         ### Compare with STAC:
-        for metric_name, metric in [("STAC", STAC_metric)]:
-            if len(metric) > 0:
-                metric_te, threshold, first_idx_ls, positive_ls, successes_test, amount_exceed_ratio = STAC_detect(metric, alpha)
-                outputs = get_metric(successes_test, positive_ls)
-                outputs.append(amount_exceed_ratio)
-                outputs.append(factor * np.mean(first_idx_ls))
-                outputs.append(factor * np.std(first_idx_ls) / np.sqrt(len(first_idx_ls)))
+        # for metric_name, metric in [("STAC", STAC_metric)]:
+        #     if len(metric) > 0:
+        #         metric_te, threshold, first_idx_ls, positive_ls, successes_test, amount_exceed_ratio = STAC_detect(metric, alpha)
+        #         outputs = get_metric(successes_test, positive_ls)
+        #         outputs.append(amount_exceed_ratio)
+        #         outputs.append(factor * np.mean(first_idx_ls))
+        #         outputs.append(factor * np.std(first_idx_ls) / np.sqrt(len(first_idx_ls)))
 
-                result_dict[f'{type}_{metric_name}_OOD:{modify}'] = outputs
-                fig, ax = plt.subplots(1, 3, figsize=(18, 6))
-                to_plot = min(150, len(metric_te))
-                rand_idx = np.random.choice(len(metric_te), to_plot, replace=False)
-                metric_te_plt = [metric_te[i] for i in rand_idx]
-                successes_test_plt = [successes_test[i] for i in rand_idx]
-                plot_on_subfig_traj(ax[0], metric_te_plt, successes_test_plt)
-                positive_ls_plt = [positive_ls[i] for i in rand_idx]
-                plot_on_subfig_traj_new(ax[1], metric_te_plt, successes_test_plt, positive_ls_plt, plot_TP=True)
-                plot_on_subfig_traj_new(ax[2], metric_te_plt, successes_test_plt, positive_ls_plt, plot_TP=False)
-                for a in ax:
-                    a.set_ylabel('Cumulative divergence', fontsize=fsize)
-                    a.set_xlabel('Time Step', fontsize=fsize)
-                    multiplier = 8
-                    xaxis = np.arange(len(metric_te_plt[0])) * multiplier
-                    a.fill_between(xaxis, threshold, 0, color='blue', alpha=0.25)
-                fig.tight_layout()
-                fig.savefig(os.path.join(output_dir, f'{metric_name}_plot.png'), bbox_inches='tight', pad_inches=0.1)
-                plt.close(fig)
+        #         result_dict[f'{type}_{metric_name}_OOD:{modify}'] = outputs
+        #         fig, ax = plt.subplots(1, 3, figsize=(18, 6))
+        #         to_plot = min(150, len(metric_te))
+        #         rand_idx = np.random.choice(len(metric_te), to_plot, replace=False)
+        #         metric_te_plt = [metric_te[i] for i in rand_idx]
+        #         successes_test_plt = [successes_test[i] for i in rand_idx]
+        #         plot_on_subfig_traj(ax[0], metric_te_plt, successes_test_plt)
+        #         positive_ls_plt = [positive_ls[i] for i in rand_idx]
+        #         plot_on_subfig_traj_new(ax[1], metric_te_plt, successes_test_plt, positive_ls_plt, plot_TP=True)
+        #         plot_on_subfig_traj_new(ax[2], metric_te_plt, successes_test_plt, positive_ls_plt, plot_TP=False)
+        #         for a in ax:
+        #             a.set_ylabel('Cumulative divergence', fontsize=fsize)
+        #             a.set_xlabel('Time Step', fontsize=fsize)
+        #             multiplier = 8
+        #             xaxis = np.arange(len(metric_te_plt[0])) * multiplier
+        #             a.fill_between(xaxis, threshold, 0, color='blue', alpha=0.25)
+        #         fig.tight_layout()
+        #         fig.savefig(os.path.join(output_dir, f'{metric_name}_plot.png'), bbox_inches='tight', pad_inches=0.1)
+        #         plt.close(fig)
         
         ### Compare with other metrics
-        result_dict[f'{type}_PCA-kmeans_OOD:{modify}'] = get_results(PCA_kmeans_metric, lb = False, suffix = '_PCA-kmeans')
-        logpO_metric = [-np.array(val) for val in logpO_metric]
-        result_dict[f'{type}_logpO_OOD:{modify}'] = get_results(logpO_metric, lb = False, suffix = '_logpO')
+        # result_dict[f'{type}_PCA-kmeans_OOD:{modify}'] = get_results(PCA_kmeans_metric, lb = False, suffix = '_PCA-kmeans')
+        # logpO_metric = [-np.array(val) for val in logpO_metric]
+        # result_dict[f'{type}_logpO_OOD:{modify}'] = get_results(logpO_metric, lb = False, suffix = '_logpO')
         result_dict[f'{type}_logpZO-Ot_OOD:{modify}'] = get_results(logpZO_metric, lb = False, suffix = '_logpZO-Ot')
-        result_dict[f'{type}_DER_OOD:{modify}'] = get_results(DER_metric, lb = False, suffix = '_DER')
-        NatPN_metric = [-np.array(val) for val in NatPN_metric]
-        result_dict[f'{type}_NatPN_OOD:{modify}'] = get_results(NatPN_metric, lb = False, suffix = '_NatPN')
-        result_dict[f'{type}_CFM_OOD:{modify}'] = get_results(CFM_metric, lb = False, suffix = '_CFM')        
-        result_dict[f'{type}_RND-Ot+At_OOD:{modify}'] = get_results(RND_metric, lb = False, suffix = '_RND-Ot+At')
+        # result_dict[f'{type}_DER_OOD:{modify}'] = get_results(DER_metric, lb = False, suffix = '_DER')
+        # NatPN_metric = [-np.array(val) for val in NatPN_metric]
+        # result_dict[f'{type}_NatPN_OOD:{modify}'] = get_results(NatPN_metric, lb = False, suffix = '_NatPN')
+        # result_dict[f'{type}_CFM_OOD:{modify}'] = get_results(CFM_metric, lb = False, suffix = '_CFM')        
+        # result_dict[f'{type}_RND-Ot+At_OOD:{modify}'] = get_results(RND_metric, lb = False, suffix = '_RND-Ot+At')
 
         
 # Organize the data into a structured format
 metrics = ['TPR', 'TNR', 'Accuracy', 'Accuracy weighted', 'Detect Time', 'Detect Time SE']
 # Store everything for use later
-methods = ['STAC', 'PCA-kmeans', 'logpO', 'logpZO-Ot', 'DER', 'NatPN', 'CFM', 'RND-Ot+At']
+# methods = ['STAC', 'PCA-kmeans', 'logpO', 'logpZO-Ot', 'DER', 'NatPN', 'CFM', 'RND-Ot+At']
+methods = ['logpZO-Ot']  # Only one method now
 index = pd.MultiIndex.from_product([rows, metrics])
 columns = pd.Index(methods, name='Method')
 # Create a DataFrame with NaN values

@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
 		plt.title(r"NLL loss")
 		plt.plot(losses)
-		plt.show()
+		# plt.show()
 		suffix = type
 		os.makedirs('images', exist_ok=True)
 		plt.savefig(f"images/training_loss_{suffix}.png")

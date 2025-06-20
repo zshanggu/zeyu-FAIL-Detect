@@ -14,6 +14,7 @@ We base our environment on [diffusion_policy](https://github.com/real-stanford/d
 
 ```
 mamba env create -f conda_environment.yaml
+conda activate faildetect
 ```
 
 ## Usage
@@ -29,9 +30,12 @@ mamba env create -f conda_environment.yaml
 ```
 # This trains a flow policy (e.g, on the square task)
 python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=image_square_ph_visual_flow_policy_cnn.yaml training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
+python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=image_can_ph_visual_flow_policy_cnn.yaml training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
 
 # This trains a diffusion policy (e.g, on the square task)
 python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=image_square_ph_visual_diffusion_policy_cnn.yaml training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
+python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=image_transport_ph_visual_diffusion_policy_cnn.yaml training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
+python train.py --config-dir=diffusion_policy/configs_robomimic --config-name=image_can_ph_visual_diffusion_policy_cnn.yaml training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
 
 # For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
 ```
@@ -52,6 +56,9 @@ training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${
 python save_data.py --config-dir=diffusion_policy/configs_robomimic \
 --config-name=image_square_ph_visual_diffusion_policy_cnn.yaml \
 training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
+python save_data.py --config-dir=diffusion_policy/configs_robomimic \
+--config-name=image_can_ph_visual_diffusion_policy_cnn.yaml \
+training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${task_name}'
 
 # For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
 ```
@@ -60,12 +67,15 @@ training.seed=1103 training.device=cuda:0 hydra.run.dir='data/outputs/${name}_${
 
 We give the examples of using **logpZO** and **RND**, which are the best performings ones. The other baselines are similar by switching to the corresponding folders
 
+Only need to change torch version from 1.12.1 to 1.13.1 for DER.
+
 ```
 cd UQ_baselines/logpZO/ # Or change to /RND/, /CFM/, /NatPN/, /DER/ ...
 # flow policy
 python train.py --policy_type='flow' --type 'square'
 # diffusion policy
 python train.py --policy_type='diffusion' --type 'square'
+python train.py --policy_type='diffusion' --type 'can'
 cd ../..
 
 # For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
@@ -78,10 +88,12 @@ cd UQ_test
 # modify = False is ID
 python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=false --num=2000
 python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=false --num=2000
+HYDRA_FULL_ERROR=1 python eval_together.py --policy_type='diffusion' --task_name='can' --device=0 --modify=false --num=2000
 
 # modify = True is OOD
 python eval_together.py --policy_type='flow' --task_name='square' --device=0 --modify=true --num=2000
 python eval_together.py --policy_type='diffusion' --task_name='square' --device=0 --modify=true --num=2000
+python eval_together.py --policy_type='diffusion' --task_name='can' --device=0 --modify=true --num=2000
 cd ..
 
 # For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
