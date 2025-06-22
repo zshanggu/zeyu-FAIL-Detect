@@ -52,6 +52,7 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
         }
         self.num_rep = 1
         self.separate = False
+        self.global_eps = None
         tasks = {10: 'square', 20: 'transport', 10: 'tool_hang', 10: 'lift', 10: 'can'}
         self.task = tasks[action_dim]
         obs_key_shapes = dict()
@@ -209,6 +210,15 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
         start, end, sign = 1, 0, -1
         timesteps = torch.linspace(start, end, self.num_inference_steps+1, device=condition_data.device)
         timesteps = (timesteps * scheduler.config.num_train_timesteps).long()
+        
+        # Compute log density of x0 with normal distribution
+        log_p_x0 = -0.5 * math.log(2 * math.pi) - 0.5 * trajectory**2
+        log_p_x0 = log_p_x0.reshape(trajectory.shape[0], -1).sum(dim=1)
+        
+        trace = 0; d = trajectory.reshape(trajectory.shape[0], -1).shape[1]
+        sigma = 0.001/math.sqrt(d)
+        if self.global_eps is None:
+            self.global_eps = torch.randn_like(trajectory).to(condition_data.device)
 
         for t in timesteps[:-1]:
             # 1. apply conditioning
@@ -218,14 +228,21 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
             t = t*torch.ones(len(trajectory)).to(trajectory.device)
             model_output = model(trajectory, t, 
                 local_cond=local_cond, global_cond=global_cond)
+            # Hutchinson's trace estimator with finite difference approximation
+            model_output_perturb = model(trajectory + sigma*self.global_eps, t, 
+                local_cond=local_cond, global_cond=global_cond)
+            e_dzdx = (model_output_perturb - model_output) / sigma
+            e_dzdx_e = e_dzdx * self.global_eps
+            approx_tr_dzdx = e_dzdx_e.reshape(trajectory.shape[0], -1).sum(dim=1)
+            trace = trace + sign * approx_tr_dzdx/self.num_inference_steps
 
             # 3. compute previous image: x_t -> x_t-1
             trajectory = trajectory + sign * model_output/self.num_inference_steps
         
         # finally make sure conditioning is enforced
         trajectory[condition_mask] = condition_data[condition_mask]
-
-        return trajectory       
+        log_p_xT = log_p_x0 - trace
+        return trajectory, log_p_xT       
 
     def get_continuous_columns(self, tensor, ranges):
         selected_columns = []
@@ -280,7 +297,7 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
             cond_mask = cond_mask.repeat_interleave(self.num_rep, dim=0)
             global_cond = global_cond.repeat_interleave(self.num_rep, dim=0)
         # run sampling
-        nsample = self.conditional_sample(
+        nsample, log_p_xT = self.conditional_sample(
             cond_data, 
             cond_mask,
             local_cond=local_cond,
@@ -298,7 +315,8 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
         result = {
             'action': action,
             'action_pred': action_pred,
-            'global_cond': global_cond
+            'global_cond': global_cond,
+            'log_p_xT': log_p_xT
         }
         return result
 
