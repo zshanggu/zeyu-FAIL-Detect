@@ -111,3 +111,9 @@ python barplot.py # Generate barplots
 python plot_with_CP_band.py --diffusion_policy # Generate CP band and make decision
 python barplot.py --diffusion_policy # Generate barplots
 ```
+
+### 6. Zeyu: evaluation on own data
+
+```
+cd UQ_test
+python3 eval_zeyu.py --policy_type='diffusion' --task_name='can' --data_folder="../data/outputs/zeyu_data" --save_plots
