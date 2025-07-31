@@ -32,6 +32,7 @@ import sys
 import matplotlib.pyplot as plt
 import glob
 import pandas as pd
+from scipy import stats
 from pathlib import Path
 
 # Add UQ_baselines to path for loading models
@@ -491,7 +492,17 @@ class MultiTrajectoryFailureDetector:
         
         mean_execution_rate = np.mean(tp_execution_rates) if tp_execution_rates else None
         std_execution_rate = np.std(tp_execution_rates) if tp_execution_rates else None
+        median_execution_rate = np.median(tp_execution_rates) if tp_execution_rates else None
         
+        # For mode with continuous data, use the most frequent value (may not be meaningful for small datasets)
+        mode_execution_rate = None
+        if tp_execution_rates:
+            try:
+                mode_result = stats.mode(tp_execution_rates, keepdims=True)
+                mode_execution_rate = mode_result.mode[0] if len(mode_result.mode) > 0 else None
+            except:
+                mode_execution_rate = None
+
         # Ground truth and prediction distributions
         gt_fail_count = sum(1 for r in all_results if r['tau_gt'] == 'τ_gt_fail')
         gt_no_fail_count = sum(1 for r in all_results if r['tau_gt'] == 'τ_gt_no−fail')
@@ -513,6 +524,8 @@ class MultiTrajectoryFailureDetector:
             'execution_rate': {
                 'mean': mean_execution_rate,
                 'std': std_execution_rate,
+                'median': median_execution_rate,
+                'mode': mode_execution_rate,
                 'count': len(tp_execution_rates),
                 'values': tp_execution_rates
             },
@@ -638,6 +651,9 @@ def main():
         if metrics['execution_rate']['mean'] is not None:
             print(f"\nExecution Rate (TP cases only):")
             print(f"  Mean: {metrics['execution_rate']['mean']:.4f}")
+            print(f"  Median: {metrics['execution_rate']['median']:.4f}")
+            if metrics['execution_rate']['mode'] is not None:
+                print(f"  Mode:   {metrics['execution_rate']['mode']:.4f}")
             print(f"  Std:  {metrics['execution_rate']['std']:.4f}")
             print(f"  Count: {metrics['execution_rate']['count']} TP cases")
         else:
@@ -697,6 +713,9 @@ def main():
             if metrics['execution_rate']['mean'] is not None:
                 f.write("Execution Rate (TP cases):\n")
                 f.write(f"  Mean: {metrics['execution_rate']['mean']:.4f}\n")
+                f.write(f"  Median: {metrics['execution_rate']['median']:.4f}\n")
+                if metrics['execution_rate']['mode'] is not None:
+                    f.write(f"  Mode: {metrics['execution_rate']['mode']:.4f}\n")
                 f.write(f"  Std: {metrics['execution_rate']['std']:.4f}\n")
                 f.write(f"  Count: {metrics['execution_rate']['count']}\n")
             else:
