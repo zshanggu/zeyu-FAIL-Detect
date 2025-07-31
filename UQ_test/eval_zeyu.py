@@ -277,7 +277,7 @@ class MultiTrajectoryFailureDetector:
             t_stop: int or None - Ground truth failure timestep (None if no failure)
             
         Returns:
-            prediction_type: str - 'TP', 'FP', 'FN', or 'TN'
+            prediction_type: str - 'TP', 'FP1', 'FP2', 'FN', or 'TN'
             tau_gt: str - 'τ_gt_fail' or 'τ_gt_no−fail'
             tau_pred: str - 'τ_pred_fail' or 'τ_pred_no−fail'
         """
@@ -299,9 +299,9 @@ class MultiTrajectoryFailureDetector:
             if t_pred_stop <= t_stop:
                 prediction_type = 'TP'  # True Positive
             else:
-                prediction_type = 'FP'  # False Positive (too late)
+                prediction_type = 'FP2'  # False Positive (too late - Late Prediction)
         elif tau_gt == 'τ_gt_no−fail' and tau_pred == 'τ_pred_fail':
-            prediction_type = 'FP'  # False Positive
+            prediction_type = 'FP1'  # False Positive (False Alarm)
         elif tau_gt == 'τ_gt_fail' and tau_pred == 'τ_pred_no−fail':
             prediction_type = 'FN'  # False Negative
         elif tau_gt == 'τ_gt_no−fail' and tau_pred == 'τ_pred_no−fail':
@@ -365,7 +365,7 @@ class MultiTrajectoryFailureDetector:
             'is_failure_predicted': is_failure_predicted,  # bool - any failure predicted?
             't_pred_stop': t_pred_stop,         # int - when first predicted (-1 if none)
             't_stop': t_stop,                   # int or None - ground truth failure timestep
-            'prediction_type': prediction_type, # str - 'TP', 'FP', 'FN', 'TN'
+            'prediction_type': prediction_type, # str - 'TP', 'FP1', 'FP2', 'FN', 'TN'
             'tau_gt': tau_gt,                   # str - ground truth label
             'tau_pred': tau_pred,               # str - predicted label
             'execution_rate': execution_rate,   # float or None - t_pred_stop/t_stop for TP
@@ -472,14 +472,15 @@ class MultiTrajectoryFailureDetector:
         """
         # Count prediction types
         tp_count = sum(1 for r in all_results if r['prediction_type'] == 'TP')
-        fp_count = sum(1 for r in all_results if r['prediction_type'] == 'FP')
+        fp1_count = sum(1 for r in all_results if r['prediction_type'] == 'FP1')
+        fp2_count = sum(1 for r in all_results if r['prediction_type'] == 'FP2')
         fn_count = sum(1 for r in all_results if r['prediction_type'] == 'FN')
         tn_count = sum(1 for r in all_results if r['prediction_type'] == 'TN')
         
         total_episodes = len(all_results)
         
         # Calculate precision and recall
-        precision = tp_count / (tp_count + fp_count) if (tp_count + fp_count) > 0 else 0.0
+        precision = tp_count / (tp_count + fp1_count + fp2_count) if (tp_count + fp1_count + fp2_count) > 0 else 0.0
         recall = tp_count / (tp_count + fn_count) if (tp_count + fn_count) > 0 else 0.0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
         
@@ -513,7 +514,8 @@ class MultiTrajectoryFailureDetector:
             'total_episodes': total_episodes,
             'confusion_matrix': {
                 'TP': tp_count,
-                'FP': fp_count,
+                'FP1': fp1_count,
+                'FP2': fp2_count,
                 'FN': fn_count,
                 'TN': tn_count
             },
@@ -638,7 +640,8 @@ def main():
         
         print(f"\nConfusion Matrix:")
         print(f"  True Positives (TP):  {metrics['confusion_matrix']['TP']}")
-        print(f"  False Positives (FP): {metrics['confusion_matrix']['FP']}")
+        print(f"  False Positives FP1 (False Alarm): {metrics['confusion_matrix']['FP1']}")
+        print(f"  False Positives FP2 (Late Prediction): {metrics['confusion_matrix']['FP2']}")
         print(f"  False Negatives (FN): {metrics['confusion_matrix']['FN']}")
         print(f"  True Negatives (TN):  {metrics['confusion_matrix']['TN']}")
         
@@ -700,7 +703,8 @@ def main():
             
             f.write("Confusion Matrix:\n")
             f.write(f"  TP: {metrics['confusion_matrix']['TP']}\n")
-            f.write(f"  FP: {metrics['confusion_matrix']['FP']}\n")
+            f.write(f"  FP1: {metrics['confusion_matrix']['FP1']}\n")
+            f.write(f"  FP2: {metrics['confusion_matrix']['FP2']}\n")
             f.write(f"  FN: {metrics['confusion_matrix']['FN']}\n")
             f.write(f"  TN: {metrics['confusion_matrix']['TN']}\n\n")
             
