@@ -68,7 +68,7 @@ def get_baseline_model(baseline_name, task_name, policy_type='flow'):
             input_dim = 548
         net = PCAKMeansNet(input_dim=input_dim, emb_dim=emb_dim, n_clusters=n_clusters)
         path_now = path_PCA_kmeans
-    ckpt = torch.load(os.path.join(path_logpZO, f'{task_name}_{policy_type}.ckpt'))
+    ckpt = torch.load(os.path.join(path_now, f'{task_name}_{policy_type}.ckpt'))
     net.load_state_dict(ckpt['model'])
     return net.eval()
 

@@ -76,6 +76,7 @@ python train.py --policy_type='flow' --type 'square'
 # diffusion policy
 python train.py --policy_type='diffusion' --type 'square'
 python train.py --policy_type='diffusion' --type 'can'
+python train.py --policy_type='flow' --type 'can'
 cd ../..
 
 # For other tasks, change 'square' to be among ['transport', 'tool_hang', 'can']
@@ -116,4 +117,4 @@ python barplot.py --diffusion_policy # Generate barplots
 
 ```
 cd UQ_test
-python3 eval_zeyu.py --policy_type='diffusion' --task_name='can' --data_folder="../data/outputs/zeyu_data" --save_plots
+python3 eval_zeyu_CFM.py --policy_type='diffusion' --task_name='can' --data_folder="../data/outputs/zeyu_data" --save_plots
