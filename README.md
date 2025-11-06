@@ -117,4 +117,5 @@ python barplot.py --diffusion_policy # Generate barplots
 
 ```
 cd UQ_test
+python3 eval_zeyu_logpZO.py --policy_type='diffusion' --task_name='can' --data_folder="../data/outputs/zeyu_data" --save_plots
 python3 eval_zeyu_CFM.py --policy_type='diffusion' --task_name='can' --data_folder="../data/outputs/zeyu_data" --save_plots

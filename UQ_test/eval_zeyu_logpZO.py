@@ -504,6 +504,9 @@ class MultiTrajectoryFailureDetector:
             except:
                 mode_execution_rate = None
 
+        execution_rate_value = mean_execution_rate if mean_execution_rate is not None else 0.0
+        combined_score = 0.25 * precision + 0.25 * recall + 0.25 * accuracy + 0.25 * execution_rate_value
+
         # Ground truth and prediction distributions
         gt_fail_count = sum(1 for r in all_results if r['tau_gt'] == 'τ_gt_fail')
         gt_no_fail_count = sum(1 for r in all_results if r['tau_gt'] == 'τ_gt_no−fail')
@@ -531,6 +534,7 @@ class MultiTrajectoryFailureDetector:
                 'count': len(tp_execution_rates),
                 'values': tp_execution_rates
             },
+            'combined_score': combined_score,
             'ground_truth_distribution': {
                 'τ_gt_fail': gt_fail_count,
                 'τ_gt_no−fail': gt_no_fail_count
@@ -661,6 +665,8 @@ def main():
             print(f"  Count: {metrics['execution_rate']['count']} TP cases")
         else:
             print(f"\nExecution Rate: No TP cases found")
+
+        print(f"\nCombined Score:  {metrics['combined_score']:.4f}")
         
         print(f"\nGround Truth Distribution:")
         print(f"  τ_gt_fail:     {metrics['ground_truth_distribution']['τ_gt_fail']}")
